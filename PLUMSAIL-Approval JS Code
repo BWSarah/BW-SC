@@ -1,0 +1,166 @@
+function filterApprover(CostCentre) {
+    var CostCentreId = CostCentre && CostCentre.LookupId || CostCentre || null;
+    fd.field('Approver').filter = 'CostCentre/Id eq ' + CostCentreId;
+    fd.field('Approver').widget.dataSource.read();
+    }
+    
+    function filterAdmin(CostCentre) {
+    var CostCentreId = CostCentre && CostCentre.LookupId || CostCentre || null;
+    fd.field('Admin').filter = 'CostCentre/Id eq ' + CostCentreId;
+    fd.field('Admin').widget.dataSource.read();
+    }
+    
+    fd.spRendered(function() {
+                     
+        var formFillerina = "words"
+        
+        // Get data from employee profile 
+        pnp.sp.profiles.myProperties.get().then(function(user) {
+            var initialprops = user.UserProfileProperties;
+        for (var i = 0; i < initialprops.length; i++) {
+            if (initialprops[i].Key == 'PreferredName') {
+                   formFillerina = initialprops[i].Value;
+                }
+            }
+    });
+        
+        fd.field('CostCentre').ready().then(function() {
+            //filter Approvers & Admin when Cost Centre changes
+            fd.field('CostCentre').$on('change', function(value){
+                filterApprover(value);
+                fd.field('Approver').value = null;
+                filterAdmin(value);
+                fd.field('Admin').value = null;
+            });
+    
+            //filter Approvers & Admin when form opens
+            fd.field('CostCentre').ready().then(function(field) {
+                filterApprover(field.value);
+                filterAdmin(field.value);
+            });
+        });
+            
+        //Show/ Hide fields depending on transaction Type field
+        function showHideTransaction() {                                                     
+            if(fd.field('TType').value === 'Reimbursement') {                 
+            $('.Reimburse').show();
+            $('.Approver').show(); 
+            $('.Supplier').hide();
+            $('.EFT').hide();
+            } else if (fd.field('TType').value === 'Debit Card') {
+                $('.Approver').show();
+                $('.Reimburse').hide();
+                $('.Supplier').show();
+                $('.EFT').hide();            
+                } else {                 
+                    $('.Approver').show();
+                    $('.Reimburse').hide();
+                    $('.Supplier').show();
+                    $('.EFT').show();
+                    } 
+            }
+            
+        //Enter this invoice into Total Synergy
+        function showHideTSNo() {                                                     
+        if(fd.field('TSEntry').value === 'I need someone to do it') {                 
+            $('.StageShow').show(); 
+            }
+        else {
+            $('.StageShow').hide(); 
+            }
+        }
+        
+        //Is the invoice relating to a vehicle 
+        function showHideVehicleY() {          
+        if(fd.field('Vehicle').value === 'Yes') {
+            $('.VehicleYesShow').show();  
+            }
+        else {
+            $('.VehicleYesShow').hide();
+            }
+        }
+        
+        //Is the invoice relating to a IT 
+        function showHideIT() {          
+        if(fd.field('ITExpense').value === 'Yes') {
+            $('.IT').show();    
+            }
+        else {
+            $('.IT').hide();
+            }
+        }               
+
+        //If reimbursement is selected then reimbursement person needs to be populated
+        fd.field('Reimb_x002d_Person').validators.push({
+            name: 'Reimbursement not empty',
+            error: "",
+            validate: function() {
+                if (fd.field('Reimb_x002d_Person').value === null && fd.field('TType').value === "Reimbursement") {
+                        this.error = "Please enter the name of the person who is receiving the reimbursement";
+                        return false;
+                    }
+                return true;
+        }
+    });
+        
+        //validator for Attachments field
+        fd.field('Attachments').validators.push({
+            name: 'AttachmentsValidation',
+            error: "Please attach PDF, JPG or PNG documents only",
+            validate: function() {
+                for(i = 0; i < fd.field('Attachments').value.length; i++) {
+                    if (fd.field('Attachments').value[i].extension === '.png' || fd.field('Attachments').value[i].extension === '.pdf' || fd.field('Attachments').value[i].extension === '.jpg' || fd.field('Attachments').value[i].extension === '.jpeg' || fd.field('Attachments').value[i].extension === '.PDF' || fd.field('Attachments').value[i].extension === '.JPEG' || fd.field('Attachments').value[i].extension === '.JPG' || fd.field('Attachments').value[i].extension === '.PNG') {
+                    return true;
+                    }
+                    return false;
+                }
+            }
+        });
+
+        //validator Approver and Created are different AND Approver and Contact are different       
+        // If Approver = User != Contact
+               
+        fd.field('Approver').validators.push({
+            name: 'Validator for Approver, Contact and User',
+            error: " ",
+            validate: function() {
+                    if (fd.field('Approver').value.Title === formFillerina && fd.field('BWContact').value === null) { 
+                        this.error = "You're approving your own expense. Please notify another person.";
+                        return false;
+                        } 
+                    if (fd.field('BWContact').value != null) {
+                            if (fd.field('Approver').value.Title === fd.field('BWContact').value.DisplayText) { 
+                                this.error = "Additional person cannot be the same as the approver; the approver will be notified.";
+                                return false;
+                            } 
+                            return true;
+                        } 
+                        return true;
+                    }
+            });
+     
+    //Show/ Hide fields depending on Cost Centre Type field
+        function showHideShared() {                                                     
+            if(fd.field('CostCentre').value.LookupValue === 'Shared') {                 
+                $('.Shared').show();           
+                } 
+            else {                 
+                $('.Shared').hide();
+                } 
+            }
+
+        // Calling Functions when the user changes the field
+        fd.field('TType').$on('change',showHideTransaction); 
+        fd.field('Vehicle').$on('change',showHideVehicleY); 
+        fd.field('TSEntry').$on('change',showHideTSNo);
+        fd.field('ITExpense').$on('change',showHideIT);
+        fd.field('CostCentre').$on('change',showHideShared);
+       
+        // Calling functions on form loading
+        showHideTransaction();
+        showHideTSNo();
+        showHideVehicleY();
+        showHideIT();
+        showHideShared();
+
+    });
