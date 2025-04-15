@@ -1,0 +1,51 @@
+Function SumByColor(rng As Range, cellColor As Range) As Double
+    Dim cell As Range
+    Dim total As Double
+    Application.Volatile
+
+    For Each cell In rng
+        If cell.Interior.Color = cellColor.Interior.Color Then
+            total = total + cell.Value
+        End If
+    Next cell
+
+    SumByColor = total
+End Function
+
+
+Function SumIfColoredT(rngCheck As Range, rngSum As Range) As Double
+    Dim i As Long
+    Dim total As Double
+    total = 0
+
+    For i = 1 To rngCheck.Rows.Count
+        With rngCheck.Cells(i, 1)
+            ' Check if cell contains "T" (case-insensitive) AND has a fill color
+            If UCase(.Value) = "T" And .Interior.ColorIndex <> xlNone Then
+                total = total + rngSum.Cells(i, 1).Value
+            End If
+        End With
+    Next i
+
+    SumIfColoredT = total
+End Function
+
+
+
+Function SumIfColoredW(rngCheck As Range, rngSum As Range) As Double
+    Dim i As Long
+    Dim total As Double
+    total = 0
+
+    For i = 1 To rngCheck.Rows.Count
+        With rngCheck.Cells(i, 1)
+            ' Check if cell contains "W" (case-insensitive) AND has a fill color
+            If UCase(.Value) = "W" And .Interior.ColorIndex <> xlNone Then
+                total = total + rngSum.Cells(i, 1).Value
+            End If
+        End With
+    Next i
+
+    SumIfColoredW = total
+End Function
+
